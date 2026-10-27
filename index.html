@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Отпуск 2027</title>
+<meta name="theme-color" content="#2f7d5b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Отпуск">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}*{box-sizing:border-box}</style>
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: шапка с живыми итогами (липкая) → легенда и кнопки → сетка 12 месяцев → таблица отрезков */
+:root{
+  --bg:#f6f7f4; --surface:#ffffff; --fg:#1d2420; --muted:#6a736d; --line:#dfe3dd;
+  --work:#ffffff; --weekend:#eceee9; --holiday:#f3d2cf; --holiday-fg:#a8322a;
+  --vac:#2f7d5b; --vac-fg:#ffffff; --vac-soft:#d6eadf; --accent:#2f7d5b; --warn:#b26a00; --warn-soft:#fbecd3;
+  --f-display:"Unbounded",system-ui,sans-serif; --f-body:"Golos Text",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141816; --surface:#1c211e; --fg:#e7ebe8; --muted:#97a19b; --line:#2d3430;
+  --work:#1c211e; --weekend:#262c28; --holiday:#4a2523; --holiday-fg:#ff9d94;
+  --vac:#46a87c; --vac-fg:#0d1a13; --vac-soft:#22392d; --accent:#5cc092; --warn:#f0b257; --warn-soft:#3b2d16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141816; --surface:#1c211e; --fg:#e7ebe8; --muted:#97a19b; --line:#2d3430;
+  --work:#1c211e; --weekend:#262c28; --holiday:#4a2523; --holiday-fg:#ff9d94;
+  --vac:#46a87c; --vac-fg:#0d1a13; --vac-soft:#22392d; --accent:#5cc092; --warn:#f0b257; --warn-soft:#3b2d16; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,44px);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:500;font-size:18px;margin:0 0 12px}
+.lead{color:var(--muted);max-width:70ch;margin:6px 0 0}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.stats{display:flex;flex-wrap:wrap;gap:8px 28px}
+.stat b{display:block;font-family:var(--f-mono);font-size:21px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat.over b{color:var(--warn)}
+.meter{height:6px;background:var(--weekend);border-radius:99px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--vac);transition:width .2s}
+.meter.over i{background:var(--warn)}
+.warns{display:grid;gap:4px}
+.warns div{font-size:13px;background:var(--warn-soft);color:var(--fg);border-left:3px solid var(--warn);padding:4px 10px;border-radius:4px}
+.tools{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:6px;border:1px solid var(--line)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.days{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-right:6px}
+.days input{font:inherit;font-family:var(--f-mono);width:72px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+.days input:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.month{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.mh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px}
+.mh h3{margin:0;font-family:var(--f-display);font-weight:500;font-size:15px}
+.mh small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;user-select:none;-webkit-user-select:none}
+.dow{font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.04em;padding-bottom:2px}
+.d{aspect-ratio:1/1;max-width:100%;display:grid;place-items:center;font:inherit;font-size:13px;font-variant-numeric:tabular-nums;border-radius:5px;background:var(--work);border:1px solid var(--line);color:var(--fg);padding:0;cursor:pointer;transition:background .1s}
+.d:hover{border-color:var(--accent)}
+.d.we{background:var(--weekend);color:var(--muted);border-color:transparent}
+.d.hol{background:var(--holiday);color:var(--holiday-fg);border-color:transparent;font-weight:600;cursor:not-allowed}
+.d.vac{background:var(--vac);color:var(--vac-fg);border-color:transparent;font-weight:600}
+.d.vac.we{box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.d.empty{background:none;border:none;cursor:default}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.note em{font-style:normal;color:var(--holiday-fg)}
+.wrap>*{min-width:0}
+[hidden]{display:none!important}
+#brushes{flex-wrap:wrap;max-width:100%}
+#brushes button{flex:1 1 auto}
+@media (max-width:600px){.stats{gap:6px 18px}.stat b{font-size:17px}.stat span{font-size:10px}.wrap{padding-block:20px 40px}}
+button.primary{background:var(--accent);color:var(--vac-fg);border-color:var(--accent);font-weight:600}
+.ov{position:fixed;inset:0;z-index:20;background:rgba(10,14,12,.6);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.ov-box{background:var(--surface);border-radius:12px;padding:16px;max-width:900px;width:100%;max-height:100%;overflow:auto;display:grid;gap:10px}
+.ov-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ov-box p{margin:0;font-size:14px;color:var(--muted)}
+.ov-box img{width:100%;height:auto;border-radius:8px;border:1px solid var(--line);-webkit-touch-callout:default}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:600px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:500}
+td.n,th.n{text-align:right}
+tfoot td{font-weight:600;border-bottom:none}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;background:var(--vac-soft);color:var(--fg)}
+.calc{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.calc input{font:inherit;font-family:var(--f-mono);width:150px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.calc input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.pos{color:var(--accent)} .neg{color:var(--warn)}
+.empty-row td{color:var(--muted);text-align:center;padding:18px}
+.rules{display:grid;gap:8px;max-width:75ch;padding-left:18px;margin:0}
+.mode{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.mode button{border:none;border-radius:0;padding:7px 14px}
+.mode button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.sched{background:var(--surface);border:1px dashed var(--accent);border-radius:10px;padding:14px 16px;display:grid;gap:12px}
+.sched p{margin:0;font-size:14px;max-width:80ch}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px}
+.row input[type=number],.row input[type=date]{font:inherit;font-family:var(--f-mono);padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.row input[type=number]{width:60px}
+.row label{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.row .ttl{font-weight:600;color:var(--fg)}
+.d.mod::after{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--warn)}
+.d{position:relative}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--line);margin-right:6px;vertical-align:-2px}
+body.m-sched .d[data-k]{cursor:cell}
+body.m-sched .d.hol{cursor:cell}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Отпуск 2027</h1>
+    <p class="lead">В режиме «Отпуск» нажмите на день, чтобы добавить его в отпуск или убрать. На компьютере можно провести мышью по нескольким дням сразу. Если ваш график отличается от производственного календаря, переключитесь в режим «Мой график» и отметьте свои рабочие, выходные и праздничные дни.</p>
+  </header>
+
+  <div class="bar">
+    <div class="stats">
+      <div class="stat" id="usedStat"><b id="used">56 / 56</b><span>дней выбрано</span></div>
+      <div class="stat"><b id="left">0</b><span>осталось</span></div>
+      <div class="stat"><b id="wdays">26</b><span>рабочих дней пропущено</span></div>
+      <div class="stat"><b id="gainStat">+0,72</b><span>оклада сверху</span></div>
+    </div>
+    <div class="meter" id="meter"><i id="meterFill" style="width: 100%;"></i></div>
+  </div>
+  <div class="warns" id="warns"></div>
+
+  <div class="tools">
+    <div class="mode" role="group" aria-label="Что редактировать">
+      <button type="button" id="mVac" aria-pressed="true">Отпуск</button>
+      <button type="button" id="mSched" aria-pressed="false">Мой график</button>
+    </div>
+    <div class="btns">
+      <label class="days" for="total">Дней отпуска в году <input id="total" type="number" inputmode="numeric" min="1" max="365" value="56"></label>
+      <button id="btnPlan" type="button">Вернуть мой план</button>
+      <button id="btnClear" type="button">Очистить отпуск</button>
+      <button id="btnImg" type="button" class="primary">Сохранить картинкой</button>
+    </div>
+  </div>
+
+  <section class="sched" id="schedPanel" hidden="">
+    <div class="row">
+      <span class="ttl">Какой день ставим</span>
+      <div class="mode" role="group" aria-label="Тип дня" id="brushes">
+        <button type="button" data-b="w" aria-pressed="true"><i class="sw" style="background:var(--work)"></i>Рабочий</button>
+        <button type="button" data-b="o" aria-pressed="false"><i class="sw" style="background:var(--weekend)"></i>Выходной</button>
+        <button type="button" data-b="h" aria-pressed="false"><i class="sw" style="background:var(--holiday)"></i>Праздник</button>
+        <button type="button" data-b="d" aria-pressed="false">Как в календаре</button>
+      </div>
+    </div>
+    <p>Выберите тип и нажимайте на дни в календаре (на компьютере можно провести мышью по нескольким). Каждый клик ставит выбранный тип. Праздник не входит в отпуск и не оплачивается. Изменённые дни отмечены точкой.</p>
+    <div class="row">
+      <span class="ttl">Сменный график</span>
+      <label for="pW">работаю <input id="pW" type="number" min="1" max="14" value="2"></label>
+      <label for="pO">отдыхаю <input id="pO" type="number" min="1" max="14" value="2"></label>
+      <label for="pStart">первый рабочий день <input id="pStart" type="date" min="2027-01-01" max="2027-12-31" value="2027-01-01"></label>
+      <label for="pHol"><input id="pHol" type="checkbox"> праздники выходные</label>
+      <button type="button" id="btnPattern">Заполнить год</button>
+    </div>
+    <div class="row">
+      <span class="ttl">Быстро</span>
+      <button type="button" id="btnHolWork">Работаю в праздники</button>
+      <button type="button" id="btnWeWork">Сб рабочая</button>
+      <button type="button" id="btnReset">Вернуть производственный календарь</button>
+    </div>
+  </section>
+
+  <div class="legend" aria-label="Обозначения">
+    <span><i style="background:var(--work)"></i>Рабочий</span>
+    <span><i style="background:var(--weekend)"></i>Выходной</span>
+    <span><i style="background:var(--holiday)"></i>Праздник</span>
+    <span><i style="background:var(--vac)"></i>Отпуск</span>
+    <span><i style="background:var(--warn);border-radius:50%;width:8px;height:8px;vertical-align:1px"></i>Изменено вручную</span>
+  </div>
+
+  <section class="months" id="months" aria-label="Календарь 2027"><article class="month"><div class="mh"><h3>Январь</h3><small id="mi0">15 раб.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d hol" data-k="1-1" disabled="" aria-pressed="false" aria-label="1 янв, праздник (Новогодние каникулы)" title="1 янв, праздник (Новогодние каникулы)">1</button><button type="button" class="d hol" data-k="1-2" disabled="" aria-pressed="false" aria-label="2 янв, праздник (Новогодние каникулы)" title="2 янв, праздник (Новогодние каникулы)">2</button><button type="button" class="d hol" data-k="1-3" disabled="" aria-pressed="false" aria-label="3 янв, праздник (Новогодние каникулы)" title="3 янв, праздник (Новогодние каникулы)">3</button><button type="button" class="d hol" data-k="1-4" disabled="" aria-pressed="false" aria-label="4 янв, праздник (Новогодние каникулы)" title="4 янв, праздник (Новогодние каникулы)">4</button><button type="button" class="d hol" data-k="1-5" disabled="" aria-pressed="false" aria-label="5 янв, праздник (Новогодние каникулы)" title="5 янв, праздник (Новогодние каникулы)">5</button><button type="button" class="d hol" data-k="1-6" disabled="" aria-pressed="false" aria-label="6 янв, праздник (Новогодние каникулы)" title="6 янв, праздник (Новогодние каникулы)">6</button><button type="button" class="d hol" data-k="1-7" disabled="" aria-pressed="false" aria-label="7 янв, праздник (Рождество)" title="7 янв, праздник (Рождество)">7</button><button type="button" class="d hol" data-k="1-8" disabled="" aria-pressed="false" aria-label="8 янв, праздник (Новогодние каникулы)" title="8 янв, праздник (Новогодние каникулы)">8</button><button type="button" class="d we" data-k="1-9" aria-pressed="false" aria-label="9 янв, выходной" title="9 янв, выходной">9</button><button type="button" class="d we" data-k="1-10" aria-pressed="false" aria-label="10 янв, выходной" title="10 янв, выходной">10</button><button type="button" class="d" data-k="1-11" aria-pressed="false" aria-label="11 янв, рабочий" title="11 янв, рабочий">11</button><button type="button" class="d" data-k="1-12" aria-pressed="false" aria-label="12 янв, рабочий" title="12 янв, рабочий">12</button><button type="button" class="d" data-k="1-13" aria-pressed="false" aria-label="13 янв, рабочий" title="13 янв, рабочий">13</button><button type="button" class="d" data-k="1-14" aria-pressed="false" aria-label="14 янв, рабочий" title="14 янв, рабочий">14</button><button type="button" class="d" data-k="1-15" aria-pressed="false" aria-label="15 янв, рабочий" title="15 янв, рабочий">15</button><button type="button" class="d we" data-k="1-16" aria-pressed="false" aria-label="16 янв, выходной" title="16 янв, выходной">16</button><button type="button" class="d we" data-k="1-17" aria-pressed="false" aria-label="17 янв, выходной" title="17 янв, выходной">17</button><button type="button" class="d" data-k="1-18" aria-pressed="false" aria-label="18 янв, рабочий" title="18 янв, рабочий">18</button><button type="button" class="d" data-k="1-19" aria-pressed="false" aria-label="19 янв, рабочий" title="19 янв, рабочий">19</button><button type="button" class="d" data-k="1-20" aria-pressed="false" aria-label="20 янв, рабочий" title="20 янв, рабочий">20</button><button type="button" class="d" data-k="1-21" aria-pressed="false" aria-label="21 янв, рабочий" title="21 янв, рабочий">21</button><button type="button" class="d" data-k="1-22" aria-pressed="false" aria-label="22 янв, рабочий" title="22 янв, рабочий">22</button><button type="button" class="d we" data-k="1-23" aria-pressed="false" aria-label="23 янв, выходной" title="23 янв, выходной">23</button><button type="button" class="d we" data-k="1-24" aria-pressed="false" aria-label="24 янв, выходной" title="24 янв, выходной">24</button><button type="button" class="d" data-k="1-25" aria-pressed="false" aria-label="25 янв, рабочий" title="25 янв, рабочий">25</button><button type="button" class="d" data-k="1-26" aria-pressed="false" aria-label="26 янв, рабочий" title="26 янв, рабочий">26</button><button type="button" class="d" data-k="1-27" aria-pressed="false" aria-label="27 янв, рабочий" title="27 янв, рабочий">27</button><button type="button" class="d" data-k="1-28" aria-pressed="false" aria-label="28 янв, рабочий" title="28 янв, рабочий">28</button><button type="button" class="d" data-k="1-29" aria-pressed="false" aria-label="29 янв, рабочий" title="29 янв, рабочий">29</button><button type="button" class="d we" data-k="1-30" aria-pressed="false" aria-label="30 янв, выходной" title="30 янв, выходной">30</button><button type="button" class="d we" data-k="1-31" aria-pressed="false" aria-label="31 янв, выходной" title="31 янв, выходной">31</button></div><div class="note" id="mn0"><em>Праздников: 8 дней</em></div></article><article class="month"><div class="mh"><h3>Февраль</h3><small id="mi1">18 раб.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><button type="button" class="d" data-k="2-1" aria-pressed="false" aria-label="1 фев, рабочий" title="1 фев, рабочий">1</button><button type="button" class="d" data-k="2-2" aria-pressed="false" aria-label="2 фев, рабочий" title="2 фев, рабочий">2</button><button type="button" class="d" data-k="2-3" aria-pressed="false" aria-label="3 фев, рабочий" title="3 фев, рабочий">3</button><button type="button" class="d" data-k="2-4" aria-pressed="false" aria-label="4 фев, рабочий" title="4 фев, рабочий">4</button><button type="button" class="d" data-k="2-5" aria-pressed="false" aria-label="5 фев, рабочий" title="5 фев, рабочий">5</button><button type="button" class="d we" data-k="2-6" aria-pressed="false" aria-label="6 фев, выходной" title="6 фев, выходной">6</button><button type="button" class="d we" data-k="2-7" aria-pressed="false" aria-label="7 фев, выходной" title="7 фев, выходной">7</button><button type="button" class="d" data-k="2-8" aria-pressed="false" aria-label="8 фев, рабочий" title="8 фев, рабочий">8</button><button type="button" class="d" data-k="2-9" aria-pressed="false" aria-label="9 фев, рабочий" title="9 фев, рабочий">9</button><button type="button" class="d" data-k="2-10" aria-pressed="false" aria-label="10 фев, рабочий" title="10 фев, рабочий">10</button><button type="button" class="d" data-k="2-11" aria-pressed="false" aria-label="11 фев, рабочий" title="11 фев, рабочий">11</button><button type="button" class="d" data-k="2-12" aria-pressed="false" aria-label="12 фев, рабочий" title="12 фев, рабочий">12</button><button type="button" class="d we" data-k="2-13" aria-pressed="false" aria-label="13 фев, выходной" title="13 фев, выходной">13</button><button type="button" class="d we" data-k="2-14" aria-pressed="false" aria-label="14 фев, выходной" title="14 фев, выходной">14</button><button type="button" class="d" data-k="2-15" aria-pressed="false" aria-label="15 фев, рабочий" title="15 фев, рабочий">15</button><button type="button" class="d" data-k="2-16" aria-pressed="false" aria-label="16 фев, рабочий" title="16 фев, рабочий">16</button><button type="button" class="d" data-k="2-17" aria-pressed="false" aria-label="17 фев, рабочий" title="17 фев, рабочий">17</button><button type="button" class="d" data-k="2-18" aria-pressed="false" aria-label="18 фев, рабочий" title="18 фев, рабочий">18</button><button type="button" class="d" data-k="2-19" aria-pressed="false" aria-label="19 фев, рабочий" title="19 фев, рабочий">19</button><button type="button" class="d we" data-k="2-20" aria-pressed="false" aria-label="20 фев, выходной" title="20 фев, выходной">20</button><button type="button" class="d we" data-k="2-21" aria-pressed="false" aria-label="21 фев, выходной" title="21 фев, выходной">21</button><button type="button" class="d hol" data-k="2-22" disabled="" aria-pressed="false" aria-label="22 фев, праздник (Перенос с 20 февраля)" title="22 фев, праздник (Перенос с 20 февраля)">22</button><button type="button" class="d hol" data-k="2-23" disabled="" aria-pressed="false" aria-label="23 фев, праздник (День защитника Отечества)" title="23 фев, праздник (День защитника Отечества)">23</button><button type="button" class="d" data-k="2-24" aria-pressed="false" aria-label="24 фев, рабочий" title="24 фев, рабочий">24</button><button type="button" class="d" data-k="2-25" aria-pressed="false" aria-label="25 фев, рабочий" title="25 фев, рабочий">25</button><button type="button" class="d" data-k="2-26" aria-pressed="false" aria-label="26 фев, рабочий" title="26 фев, рабочий">26</button><button type="button" class="d we" data-k="2-27" aria-pressed="false" aria-label="27 фев, выходной" title="27 фев, выходной">27</button><button type="button" class="d we" data-k="2-28" aria-pressed="false" aria-label="28 фев, выходной" title="28 фев, выходной">28</button></div><div class="note" id="mn1"><em>Праздников: 2 дня</em></div></article><article class="month"><div class="mh"><h3>Март</h3><small id="mi2">22 раб.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><button type="button" class="d" data-k="3-1" aria-pressed="false" aria-label="1 мар, рабочий" title="1 мар, рабочий">1</button><button type="button" class="d" data-k="3-2" aria-pressed="false" aria-label="2 мар, рабочий" title="2 мар, рабочий">2</button><button type="button" class="d" data-k="3-3" aria-pressed="false" aria-label="3 мар, рабочий" title="3 мар, рабочий">3</button><button type="button" class="d" data-k="3-4" aria-pressed="false" aria-label="4 мар, рабочий" title="4 мар, рабочий">4</button><button type="button" class="d" data-k="3-5" aria-pressed="false" aria-label="5 мар, рабочий" title="5 мар, рабочий">5</button><button type="button" class="d we" data-k="3-6" aria-pressed="false" aria-label="6 мар, выходной" title="6 мар, выходной">6</button><button type="button" class="d we" data-k="3-7" aria-pressed="false" aria-label="7 мар, выходной" title="7 мар, выходной">7</button><button type="button" class="d hol" data-k="3-8" disabled="" aria-pressed="false" aria-label="8 мар, праздник (Международный женский день)" title="8 мар, праздник (Международный женский день)">8</button><button type="button" class="d" data-k="3-9" aria-pressed="false" aria-label="9 мар, рабочий" title="9 мар, рабочий">9</button><button type="button" class="d" data-k="3-10" aria-pressed="false" aria-label="10 мар, рабочий" title="10 мар, рабочий">10</button><button type="button" class="d" data-k="3-11" aria-pressed="false" aria-label="11 мар, рабочий" title="11 мар, рабочий">11</button><button type="button" class="d" data-k="3-12" aria-pressed="false" aria-label="12 мар, рабочий" title="12 мар, рабочий">12</button><button type="button" class="d we" data-k="3-13" aria-pressed="false" aria-label="13 мар, выходной" title="13 мар, выходной">13</button><button type="button" class="d we" data-k="3-14" aria-pressed="false" aria-label="14 мар, выходной" title="14 мар, выходной">14</button><button type="button" class="d" data-k="3-15" aria-pressed="false" aria-label="15 мар, рабочий" title="15 мар, рабочий">15</button><button type="button" class="d" data-k="3-16" aria-pressed="false" aria-label="16 мар, рабочий" title="16 мар, рабочий">16</button><button type="button" class="d" data-k="3-17" aria-pressed="false" aria-label="17 мар, рабочий" title="17 мар, рабочий">17</button><button type="button" class="d" data-k="3-18" aria-pressed="false" aria-label="18 мар, рабочий" title="18 мар, рабочий">18</button><button type="button" class="d" data-k="3-19" aria-pressed="false" aria-label="19 мар, рабочий" title="19 мар, рабочий">19</button><button type="button" class="d we" data-k="3-20" aria-pressed="false" aria-label="20 мар, выходной" title="20 мар, выходной">20</button><button type="button" class="d we" data-k="3-21" aria-pressed="false" aria-label="21 мар, выходной" title="21 мар, выходной">21</button><button type="button" class="d" data-k="3-22" aria-pressed="false" aria-label="22 мар, рабочий" title="22 мар, рабочий">22</button><button type="button" class="d" data-k="3-23" aria-pressed="false" aria-label="23 мар, рабочий" title="23 мар, рабочий">23</button><button type="button" class="d" data-k="3-24" aria-pressed="false" aria-label="24 мар, рабочий" title="24 мар, рабочий">24</button><button type="button" class="d" data-k="3-25" aria-pressed="false" aria-label="25 мар, рабочий" title="25 мар, рабочий">25</button><button type="button" class="d" data-k="3-26" aria-pressed="false" aria-label="26 мар, рабочий" title="26 мар, рабочий">26</button><button type="button" class="d we" data-k="3-27" aria-pressed="false" aria-label="27 мар, выходной" title="27 мар, выходной">27</button><button type="button" class="d we" data-k="3-28" aria-pressed="false" aria-label="28 мар, выходной" title="28 мар, выходной">28</button><button type="button" class="d" data-k="3-29" aria-pressed="false" aria-label="29 мар, рабочий" title="29 мар, рабочий">29</button><button type="button" class="d" data-k="3-30" aria-pressed="false" aria-label="30 мар, рабочий" title="30 мар, рабочий">30</button><button type="button" class="d" data-k="3-31" aria-pressed="false" aria-label="31 мар, рабочий" title="31 мар, рабочий">31</button></div><div class="note" id="mn2"><em>Праздников: 1 день</em></div></article><article class="month"><div class="mh"><h3>Апрель</h3><small id="mi3">22 раб. · отпуск 6 дн.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d" data-k="4-1" aria-pressed="false" aria-label="1 апр, рабочий" title="1 апр, рабочий">1</button><button type="button" class="d" data-k="4-2" aria-pressed="false" aria-label="2 апр, рабочий" title="2 апр, рабочий">2</button><button type="button" class="d we" data-k="4-3" aria-pressed="false" aria-label="3 апр, выходной" title="3 апр, выходной">3</button><button type="button" class="d we" data-k="4-4" aria-pressed="false" aria-label="4 апр, выходной" title="4 апр, выходной">4</button><button type="button" class="d" data-k="4-5" aria-pressed="false" aria-label="5 апр, рабочий" title="5 апр, рабочий">5</button><button type="button" class="d" data-k="4-6" aria-pressed="false" aria-label="6 апр, рабочий" title="6 апр, рабочий">6</button><button type="button" class="d" data-k="4-7" aria-pressed="false" aria-label="7 апр, рабочий" title="7 апр, рабочий">7</button><button type="button" class="d" data-k="4-8" aria-pressed="false" aria-label="8 апр, рабочий" title="8 апр, рабочий">8</button><button type="button" class="d vac" data-k="4-9" aria-pressed="true" aria-label="9 апр, рабочий" title="9 апр, рабочий">9</button><button type="button" class="d we vac" data-k="4-10" aria-pressed="true" aria-label="10 апр, выходной" title="10 апр, выходной">10</button><button type="button" class="d we vac" data-k="4-11" aria-pressed="true" aria-label="11 апр, выходной" title="11 апр, выходной">11</button><button type="button" class="d" data-k="4-12" aria-pressed="false" aria-label="12 апр, рабочий" title="12 апр, рабочий">12</button><button type="button" class="d" data-k="4-13" aria-pressed="false" aria-label="13 апр, рабочий" title="13 апр, рабочий">13</button><button type="button" class="d" data-k="4-14" aria-pressed="false" aria-label="14 апр, рабочий" title="14 апр, рабочий">14</button><button type="button" class="d" data-k="4-15" aria-pressed="false" aria-label="15 апр, рабочий" title="15 апр, рабочий">15</button><button type="button" class="d" data-k="4-16" aria-pressed="false" aria-label="16 апр, рабочий" title="16 апр, рабочий">16</button><button type="button" class="d we" data-k="4-17" aria-pressed="false" aria-label="17 апр, выходной" title="17 апр, выходной">17</button><button type="button" class="d we" data-k="4-18" aria-pressed="false" aria-label="18 апр, выходной" title="18 апр, выходной">18</button><button type="button" class="d" data-k="4-19" aria-pressed="false" aria-label="19 апр, рабочий" title="19 апр, рабочий">19</button><button type="button" class="d" data-k="4-20" aria-pressed="false" aria-label="20 апр, рабочий" title="20 апр, рабочий">20</button><button type="button" class="d" data-k="4-21" aria-pressed="false" aria-label="21 апр, рабочий" title="21 апр, рабочий">21</button><button type="button" class="d" data-k="4-22" aria-pressed="false" aria-label="22 апр, рабочий" title="22 апр, рабочий">22</button><button type="button" class="d vac" data-k="4-23" aria-pressed="true" aria-label="23 апр, рабочий" title="23 апр, рабочий">23</button><button type="button" class="d we vac" data-k="4-24" aria-pressed="true" aria-label="24 апр, выходной" title="24 апр, выходной">24</button><button type="button" class="d we vac" data-k="4-25" aria-pressed="true" aria-label="25 апр, выходной" title="25 апр, выходной">25</button><button type="button" class="d" data-k="4-26" aria-pressed="false" aria-label="26 апр, рабочий" title="26 апр, рабочий">26</button><button type="button" class="d" data-k="4-27" aria-pressed="false" aria-label="27 апр, рабочий" title="27 апр, рабочий">27</button><button type="button" class="d" data-k="4-28" aria-pressed="false" aria-label="28 апр, рабочий" title="28 апр, рабочий">28</button><button type="button" class="d" data-k="4-29" aria-pressed="false" aria-label="29 апр, рабочий" title="29 апр, рабочий">29</button><button type="button" class="d" data-k="4-30" aria-pressed="false" aria-label="30 апр, рабочий" title="30 апр, рабочий">30</button></div><div class="note" id="mn3">Без праздников</div></article><article class="month"><div class="mh"><h3>Май</h3><small id="mi4">19 раб.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d hol" data-k="5-1" disabled="" aria-pressed="false" aria-label="1 мая, праздник (Праздник Весны и Труда)" title="1 мая, праздник (Праздник Весны и Труда)">1</button><button type="button" class="d we" data-k="5-2" aria-pressed="false" aria-label="2 мая, выходной" title="2 мая, выходной">2</button><button type="button" class="d hol" data-k="5-3" disabled="" aria-pressed="false" aria-label="3 мая, праздник (Перенос с 1 мая)" title="3 мая, праздник (Перенос с 1 мая)">3</button><button type="button" class="d" data-k="5-4" aria-pressed="false" aria-label="4 мая, рабочий" title="4 мая, рабочий">4</button><button type="button" class="d" data-k="5-5" aria-pressed="false" aria-label="5 мая, рабочий" title="5 мая, рабочий">5</button><button type="button" class="d" data-k="5-6" aria-pressed="false" aria-label="6 мая, рабочий" title="6 мая, рабочий">6</button><button type="button" class="d" data-k="5-7" aria-pressed="false" aria-label="7 мая, рабочий" title="7 мая, рабочий">7</button><button type="button" class="d we" data-k="5-8" aria-pressed="false" aria-label="8 мая, выходной" title="8 мая, выходной">8</button><button type="button" class="d hol" data-k="5-9" disabled="" aria-pressed="false" aria-label="9 мая, праздник (День Победы)" title="9 мая, праздник (День Победы)">9</button><button type="button" class="d hol" data-k="5-10" disabled="" aria-pressed="false" aria-label="10 мая, праздник (Перенос с 9 мая)" title="10 мая, праздник (Перенос с 9 мая)">10</button><button type="button" class="d" data-k="5-11" aria-pressed="false" aria-label="11 мая, рабочий" title="11 мая, рабочий">11</button><button type="button" class="d" data-k="5-12" aria-pressed="false" aria-label="12 мая, рабочий" title="12 мая, рабочий">12</button><button type="button" class="d" data-k="5-13" aria-pressed="false" aria-label="13 мая, рабочий" title="13 мая, рабочий">13</button><button type="button" class="d" data-k="5-14" aria-pressed="false" aria-label="14 мая, рабочий" title="14 мая, рабочий">14</button><button type="button" class="d we" data-k="5-15" aria-pressed="false" aria-label="15 мая, выходной" title="15 мая, выходной">15</button><button type="button" class="d we" data-k="5-16" aria-pressed="false" aria-label="16 мая, выходной" title="16 мая, выходной">16</button><button type="button" class="d" data-k="5-17" aria-pressed="false" aria-label="17 мая, рабочий" title="17 мая, рабочий">17</button><button type="button" class="d" data-k="5-18" aria-pressed="false" aria-label="18 мая, рабочий" title="18 мая, рабочий">18</button><button type="button" class="d" data-k="5-19" aria-pressed="false" aria-label="19 мая, рабочий" title="19 мая, рабочий">19</button><button type="button" class="d" data-k="5-20" aria-pressed="false" aria-label="20 мая, рабочий" title="20 мая, рабочий">20</button><button type="button" class="d" data-k="5-21" aria-pressed="false" aria-label="21 мая, рабочий" title="21 мая, рабочий">21</button><button type="button" class="d we" data-k="5-22" aria-pressed="false" aria-label="22 мая, выходной" title="22 мая, выходной">22</button><button type="button" class="d we" data-k="5-23" aria-pressed="false" aria-label="23 мая, выходной" title="23 мая, выходной">23</button><button type="button" class="d" data-k="5-24" aria-pressed="false" aria-label="24 мая, рабочий" title="24 мая, рабочий">24</button><button type="button" class="d" data-k="5-25" aria-pressed="false" aria-label="25 мая, рабочий" title="25 мая, рабочий">25</button><button type="button" class="d" data-k="5-26" aria-pressed="false" aria-label="26 мая, рабочий" title="26 мая, рабочий">26</button><button type="button" class="d" data-k="5-27" aria-pressed="false" aria-label="27 мая, рабочий" title="27 мая, рабочий">27</button><button type="button" class="d" data-k="5-28" aria-pressed="false" aria-label="28 мая, рабочий" title="28 мая, рабочий">28</button><button type="button" class="d we" data-k="5-29" aria-pressed="false" aria-label="29 мая, выходной" title="29 мая, выходной">29</button><button type="button" class="d we" data-k="5-30" aria-pressed="false" aria-label="30 мая, выходной" title="30 мая, выходной">30</button><button type="button" class="d" data-k="5-31" aria-pressed="false" aria-label="31 мая, рабочий" title="31 мая, рабочий">31</button></div><div class="note" id="mn4"><em>Праздников: 4 дня</em></div></article><article class="month"><div class="mh"><h3>Июнь</h3><small id="mi5">21 раб.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><button type="button" class="d" data-k="6-1" aria-pressed="false" aria-label="1 июн, рабочий" title="1 июн, рабочий">1</button><button type="button" class="d" data-k="6-2" aria-pressed="false" aria-label="2 июн, рабочий" title="2 июн, рабочий">2</button><button type="button" class="d" data-k="6-3" aria-pressed="false" aria-label="3 июн, рабочий" title="3 июн, рабочий">3</button><button type="button" class="d" data-k="6-4" aria-pressed="false" aria-label="4 июн, рабочий" title="4 июн, рабочий">4</button><button type="button" class="d we" data-k="6-5" aria-pressed="false" aria-label="5 июн, выходной" title="5 июн, выходной">5</button><button type="button" class="d we" data-k="6-6" aria-pressed="false" aria-label="6 июн, выходной" title="6 июн, выходной">6</button><button type="button" class="d" data-k="6-7" aria-pressed="false" aria-label="7 июн, рабочий" title="7 июн, рабочий">7</button><button type="button" class="d" data-k="6-8" aria-pressed="false" aria-label="8 июн, рабочий" title="8 июн, рабочий">8</button><button type="button" class="d" data-k="6-9" aria-pressed="false" aria-label="9 июн, рабочий" title="9 июн, рабочий">9</button><button type="button" class="d" data-k="6-10" aria-pressed="false" aria-label="10 июн, рабочий" title="10 июн, рабочий">10</button><button type="button" class="d" data-k="6-11" aria-pressed="false" aria-label="11 июн, рабочий" title="11 июн, рабочий">11</button><button type="button" class="d hol" data-k="6-12" disabled="" aria-pressed="false" aria-label="12 июн, праздник (День России)" title="12 июн, праздник (День России)">12</button><button type="button" class="d we" data-k="6-13" aria-pressed="false" aria-label="13 июн, выходной" title="13 июн, выходной">13</button><button type="button" class="d hol" data-k="6-14" disabled="" aria-pressed="false" aria-label="14 июн, праздник (Перенос с 12 июня)" title="14 июн, праздник (Перенос с 12 июня)">14</button><button type="button" class="d" data-k="6-15" aria-pressed="false" aria-label="15 июн, рабочий" title="15 июн, рабочий">15</button><button type="button" class="d" data-k="6-16" aria-pressed="false" aria-label="16 июн, рабочий" title="16 июн, рабочий">16</button><button type="button" class="d" data-k="6-17" aria-pressed="false" aria-label="17 июн, рабочий" title="17 июн, рабочий">17</button><button type="button" class="d" data-k="6-18" aria-pressed="false" aria-label="18 июн, рабочий" title="18 июн, рабочий">18</button><button type="button" class="d we" data-k="6-19" aria-pressed="false" aria-label="19 июн, выходной" title="19 июн, выходной">19</button><button type="button" class="d we" data-k="6-20" aria-pressed="false" aria-label="20 июн, выходной" title="20 июн, выходной">20</button><button type="button" class="d" data-k="6-21" aria-pressed="false" aria-label="21 июн, рабочий" title="21 июн, рабочий">21</button><button type="button" class="d" data-k="6-22" aria-pressed="false" aria-label="22 июн, рабочий" title="22 июн, рабочий">22</button><button type="button" class="d" data-k="6-23" aria-pressed="false" aria-label="23 июн, рабочий" title="23 июн, рабочий">23</button><button type="button" class="d" data-k="6-24" aria-pressed="false" aria-label="24 июн, рабочий" title="24 июн, рабочий">24</button><button type="button" class="d" data-k="6-25" aria-pressed="false" aria-label="25 июн, рабочий" title="25 июн, рабочий">25</button><button type="button" class="d we" data-k="6-26" aria-pressed="false" aria-label="26 июн, выходной" title="26 июн, выходной">26</button><button type="button" class="d we" data-k="6-27" aria-pressed="false" aria-label="27 июн, выходной" title="27 июн, выходной">27</button><button type="button" class="d" data-k="6-28" aria-pressed="false" aria-label="28 июн, рабочий" title="28 июн, рабочий">28</button><button type="button" class="d" data-k="6-29" aria-pressed="false" aria-label="29 июн, рабочий" title="29 июн, рабочий">29</button><button type="button" class="d" data-k="6-30" aria-pressed="false" aria-label="30 июн, рабочий" title="30 июн, рабочий">30</button></div><div class="note" id="mn5"><em>Праздников: 2 дня</em></div></article><article class="month"><div class="mh"><h3>Июль</h3><small id="mi6">22 раб. · отпуск 15 дн.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d" data-k="7-1" aria-pressed="false" aria-label="1 июл, рабочий" title="1 июл, рабочий">1</button><button type="button" class="d vac" data-k="7-2" aria-pressed="true" aria-label="2 июл, рабочий" title="2 июл, рабочий">2</button><button type="button" class="d we vac" data-k="7-3" aria-pressed="true" aria-label="3 июл, выходной" title="3 июл, выходной">3</button><button type="button" class="d we vac" data-k="7-4" aria-pressed="true" aria-label="4 июл, выходной" title="4 июл, выходной">4</button><button type="button" class="d" data-k="7-5" aria-pressed="false" aria-label="5 июл, рабочий" title="5 июл, рабочий">5</button><button type="button" class="d" data-k="7-6" aria-pressed="false" aria-label="6 июл, рабочий" title="6 июл, рабочий">6</button><button type="button" class="d" data-k="7-7" aria-pressed="false" aria-label="7 июл, рабочий" title="7 июл, рабочий">7</button><button type="button" class="d" data-k="7-8" aria-pressed="false" aria-label="8 июл, рабочий" title="8 июл, рабочий">8</button><button type="button" class="d" data-k="7-9" aria-pressed="false" aria-label="9 июл, рабочий" title="9 июл, рабочий">9</button><button type="button" class="d we" data-k="7-10" aria-pressed="false" aria-label="10 июл, выходной" title="10 июл, выходной">10</button><button type="button" class="d we" data-k="7-11" aria-pressed="false" aria-label="11 июл, выходной" title="11 июл, выходной">11</button><button type="button" class="d" data-k="7-12" aria-pressed="false" aria-label="12 июл, рабочий" title="12 июл, рабочий">12</button><button type="button" class="d" data-k="7-13" aria-pressed="false" aria-label="13 июл, рабочий" title="13 июл, рабочий">13</button><button type="button" class="d" data-k="7-14" aria-pressed="false" aria-label="14 июл, рабочий" title="14 июл, рабочий">14</button><button type="button" class="d" data-k="7-15" aria-pressed="false" aria-label="15 июл, рабочий" title="15 июл, рабочий">15</button><button type="button" class="d vac" data-k="7-16" aria-pressed="true" aria-label="16 июл, рабочий" title="16 июл, рабочий">16</button><button type="button" class="d we vac" data-k="7-17" aria-pressed="true" aria-label="17 июл, выходной" title="17 июл, выходной">17</button><button type="button" class="d we vac" data-k="7-18" aria-pressed="true" aria-label="18 июл, выходной" title="18 июл, выходной">18</button><button type="button" class="d vac" data-k="7-19" aria-pressed="true" aria-label="19 июл, рабочий" title="19 июл, рабочий">19</button><button type="button" class="d vac" data-k="7-20" aria-pressed="true" aria-label="20 июл, рабочий" title="20 июл, рабочий">20</button><button type="button" class="d vac" data-k="7-21" aria-pressed="true" aria-label="21 июл, рабочий" title="21 июл, рабочий">21</button><button type="button" class="d vac" data-k="7-22" aria-pressed="true" aria-label="22 июл, рабочий" title="22 июл, рабочий">22</button><button type="button" class="d vac" data-k="7-23" aria-pressed="true" aria-label="23 июл, рабочий" title="23 июл, рабочий">23</button><button type="button" class="d we vac" data-k="7-24" aria-pressed="true" aria-label="24 июл, выходной" title="24 июл, выходной">24</button><button type="button" class="d we vac" data-k="7-25" aria-pressed="true" aria-label="25 июл, выходной" title="25 июл, выходной">25</button><button type="button" class="d" data-k="7-26" aria-pressed="false" aria-label="26 июл, рабочий" title="26 июл, рабочий">26</button><button type="button" class="d" data-k="7-27" aria-pressed="false" aria-label="27 июл, рабочий" title="27 июл, рабочий">27</button><button type="button" class="d" data-k="7-28" aria-pressed="false" aria-label="28 июл, рабочий" title="28 июл, рабочий">28</button><button type="button" class="d" data-k="7-29" aria-pressed="false" aria-label="29 июл, рабочий" title="29 июл, рабочий">29</button><button type="button" class="d vac" data-k="7-30" aria-pressed="true" aria-label="30 июл, рабочий" title="30 июл, рабочий">30</button><button type="button" class="d we vac" data-k="7-31" aria-pressed="true" aria-label="31 июл, выходной" title="31 июл, выходной">31</button></div><div class="note" id="mn6">Без праздников</div></article><article class="month"><div class="mh"><h3>Август</h3><small id="mi7">22 раб. · отпуск 7 дн.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d we vac" data-k="8-1" aria-pressed="true" aria-label="1 авг, выходной" title="1 авг, выходной">1</button><button type="button" class="d" data-k="8-2" aria-pressed="false" aria-label="2 авг, рабочий" title="2 авг, рабочий">2</button><button type="button" class="d" data-k="8-3" aria-pressed="false" aria-label="3 авг, рабочий" title="3 авг, рабочий">3</button><button type="button" class="d" data-k="8-4" aria-pressed="false" aria-label="4 авг, рабочий" title="4 авг, рабочий">4</button><button type="button" class="d" data-k="8-5" aria-pressed="false" aria-label="5 авг, рабочий" title="5 авг, рабочий">5</button><button type="button" class="d" data-k="8-6" aria-pressed="false" aria-label="6 авг, рабочий" title="6 авг, рабочий">6</button><button type="button" class="d we" data-k="8-7" aria-pressed="false" aria-label="7 авг, выходной" title="7 авг, выходной">7</button><button type="button" class="d we" data-k="8-8" aria-pressed="false" aria-label="8 авг, выходной" title="8 авг, выходной">8</button><button type="button" class="d" data-k="8-9" aria-pressed="false" aria-label="9 авг, рабочий" title="9 авг, рабочий">9</button><button type="button" class="d" data-k="8-10" aria-pressed="false" aria-label="10 авг, рабочий" title="10 авг, рабочий">10</button><button type="button" class="d" data-k="8-11" aria-pressed="false" aria-label="11 авг, рабочий" title="11 авг, рабочий">11</button><button type="button" class="d" data-k="8-12" aria-pressed="false" aria-label="12 авг, рабочий" title="12 авг, рабочий">12</button><button type="button" class="d vac" data-k="8-13" aria-pressed="true" aria-label="13 авг, рабочий" title="13 авг, рабочий">13</button><button type="button" class="d we vac" data-k="8-14" aria-pressed="true" aria-label="14 авг, выходной" title="14 авг, выходной">14</button><button type="button" class="d we vac" data-k="8-15" aria-pressed="true" aria-label="15 авг, выходной" title="15 авг, выходной">15</button><button type="button" class="d" data-k="8-16" aria-pressed="false" aria-label="16 авг, рабочий" title="16 авг, рабочий">16</button><button type="button" class="d" data-k="8-17" aria-pressed="false" aria-label="17 авг, рабочий" title="17 авг, рабочий">17</button><button type="button" class="d" data-k="8-18" aria-pressed="false" aria-label="18 авг, рабочий" title="18 авг, рабочий">18</button><button type="button" class="d" data-k="8-19" aria-pressed="false" aria-label="19 авг, рабочий" title="19 авг, рабочий">19</button><button type="button" class="d" data-k="8-20" aria-pressed="false" aria-label="20 авг, рабочий" title="20 авг, рабочий">20</button><button type="button" class="d we" data-k="8-21" aria-pressed="false" aria-label="21 авг, выходной" title="21 авг, выходной">21</button><button type="button" class="d we" data-k="8-22" aria-pressed="false" aria-label="22 авг, выходной" title="22 авг, выходной">22</button><button type="button" class="d" data-k="8-23" aria-pressed="false" aria-label="23 авг, рабочий" title="23 авг, рабочий">23</button><button type="button" class="d" data-k="8-24" aria-pressed="false" aria-label="24 авг, рабочий" title="24 авг, рабочий">24</button><button type="button" class="d" data-k="8-25" aria-pressed="false" aria-label="25 авг, рабочий" title="25 авг, рабочий">25</button><button type="button" class="d" data-k="8-26" aria-pressed="false" aria-label="26 авг, рабочий" title="26 авг, рабочий">26</button><button type="button" class="d vac" data-k="8-27" aria-pressed="true" aria-label="27 авг, рабочий" title="27 авг, рабочий">27</button><button type="button" class="d we vac" data-k="8-28" aria-pressed="true" aria-label="28 авг, выходной" title="28 авг, выходной">28</button><button type="button" class="d we vac" data-k="8-29" aria-pressed="true" aria-label="29 авг, выходной" title="29 авг, выходной">29</button><button type="button" class="d" data-k="8-30" aria-pressed="false" aria-label="30 авг, рабочий" title="30 авг, рабочий">30</button><button type="button" class="d" data-k="8-31" aria-pressed="false" aria-label="31 авг, рабочий" title="31 авг, рабочий">31</button></div><div class="note" id="mn7">Без праздников</div></article><article class="month"><div class="mh"><h3>Сентябрь</h3><small id="mi8">22 раб. · отпуск 19 дн.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d" data-k="9-1" aria-pressed="false" aria-label="1 сен, рабочий" title="1 сен, рабочий">1</button><button type="button" class="d" data-k="9-2" aria-pressed="false" aria-label="2 сен, рабочий" title="2 сен, рабочий">2</button><button type="button" class="d" data-k="9-3" aria-pressed="false" aria-label="3 сен, рабочий" title="3 сен, рабочий">3</button><button type="button" class="d we vac" data-k="9-4" aria-pressed="true" aria-label="4 сен, выходной" title="4 сен, выходной">4</button><button type="button" class="d we vac" data-k="9-5" aria-pressed="true" aria-label="5 сен, выходной" title="5 сен, выходной">5</button><button type="button" class="d vac" data-k="9-6" aria-pressed="true" aria-label="6 сен, рабочий" title="6 сен, рабочий">6</button><button type="button" class="d vac" data-k="9-7" aria-pressed="true" aria-label="7 сен, рабочий" title="7 сен, рабочий">7</button><button type="button" class="d vac" data-k="9-8" aria-pressed="true" aria-label="8 сен, рабочий" title="8 сен, рабочий">8</button><button type="button" class="d vac" data-k="9-9" aria-pressed="true" aria-label="9 сен, рабочий" title="9 сен, рабочий">9</button><button type="button" class="d vac" data-k="9-10" aria-pressed="true" aria-label="10 сен, рабочий" title="10 сен, рабочий">10</button><button type="button" class="d we vac" data-k="9-11" aria-pressed="true" aria-label="11 сен, выходной" title="11 сен, выходной">11</button><button type="button" class="d we vac" data-k="9-12" aria-pressed="true" aria-label="12 сен, выходной" title="12 сен, выходной">12</button><button type="button" class="d vac" data-k="9-13" aria-pressed="true" aria-label="13 сен, рабочий" title="13 сен, рабочий">13</button><button type="button" class="d vac" data-k="9-14" aria-pressed="true" aria-label="14 сен, рабочий" title="14 сен, рабочий">14</button><button type="button" class="d vac" data-k="9-15" aria-pressed="true" aria-label="15 сен, рабочий" title="15 сен, рабочий">15</button><button type="button" class="d vac" data-k="9-16" aria-pressed="true" aria-label="16 сен, рабочий" title="16 сен, рабочий">16</button><button type="button" class="d vac" data-k="9-17" aria-pressed="true" aria-label="17 сен, рабочий" title="17 сен, рабочий">17</button><button type="button" class="d we vac" data-k="9-18" aria-pressed="true" aria-label="18 сен, выходной" title="18 сен, выходной">18</button><button type="button" class="d we vac" data-k="9-19" aria-pressed="true" aria-label="19 сен, выходной" title="19 сен, выходной">19</button><button type="button" class="d" data-k="9-20" aria-pressed="false" aria-label="20 сен, рабочий" title="20 сен, рабочий">20</button><button type="button" class="d" data-k="9-21" aria-pressed="false" aria-label="21 сен, рабочий" title="21 сен, рабочий">21</button><button type="button" class="d" data-k="9-22" aria-pressed="false" aria-label="22 сен, рабочий" title="22 сен, рабочий">22</button><button type="button" class="d" data-k="9-23" aria-pressed="false" aria-label="23 сен, рабочий" title="23 сен, рабочий">23</button><button type="button" class="d vac" data-k="9-24" aria-pressed="true" aria-label="24 сен, рабочий" title="24 сен, рабочий">24</button><button type="button" class="d we vac" data-k="9-25" aria-pressed="true" aria-label="25 сен, выходной" title="25 сен, выходной">25</button><button type="button" class="d we vac" data-k="9-26" aria-pressed="true" aria-label="26 сен, выходной" title="26 сен, выходной">26</button><button type="button" class="d" data-k="9-27" aria-pressed="false" aria-label="27 сен, рабочий" title="27 сен, рабочий">27</button><button type="button" class="d" data-k="9-28" aria-pressed="false" aria-label="28 сен, рабочий" title="28 сен, рабочий">28</button><button type="button" class="d" data-k="9-29" aria-pressed="false" aria-label="29 сен, рабочий" title="29 сен, рабочий">29</button><button type="button" class="d" data-k="9-30" aria-pressed="false" aria-label="30 сен, рабочий" title="30 сен, рабочий">30</button></div><div class="note" id="mn8">Без праздников</div></article><article class="month"><div class="mh"><h3>Октябрь</h3><small id="mi9">21 раб. · отпуск 9 дн.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d" data-k="10-1" aria-pressed="false" aria-label="1 окт, рабочий" title="1 окт, рабочий">1</button><button type="button" class="d we" data-k="10-2" aria-pressed="false" aria-label="2 окт, выходной" title="2 окт, выходной">2</button><button type="button" class="d we" data-k="10-3" aria-pressed="false" aria-label="3 окт, выходной" title="3 окт, выходной">3</button><button type="button" class="d" data-k="10-4" aria-pressed="false" aria-label="4 окт, рабочий" title="4 окт, рабочий">4</button><button type="button" class="d" data-k="10-5" aria-pressed="false" aria-label="5 окт, рабочий" title="5 окт, рабочий">5</button><button type="button" class="d" data-k="10-6" aria-pressed="false" aria-label="6 окт, рабочий" title="6 окт, рабочий">6</button><button type="button" class="d" data-k="10-7" aria-pressed="false" aria-label="7 окт, рабочий" title="7 окт, рабочий">7</button><button type="button" class="d vac" data-k="10-8" aria-pressed="true" aria-label="8 окт, рабочий" title="8 окт, рабочий">8</button><button type="button" class="d we vac" data-k="10-9" aria-pressed="true" aria-label="9 окт, выходной" title="9 окт, выходной">9</button><button type="button" class="d we vac" data-k="10-10" aria-pressed="true" aria-label="10 окт, выходной" title="10 окт, выходной">10</button><button type="button" class="d" data-k="10-11" aria-pressed="false" aria-label="11 окт, рабочий" title="11 окт, рабочий">11</button><button type="button" class="d" data-k="10-12" aria-pressed="false" aria-label="12 окт, рабочий" title="12 окт, рабочий">12</button><button type="button" class="d" data-k="10-13" aria-pressed="false" aria-label="13 окт, рабочий" title="13 окт, рабочий">13</button><button type="button" class="d" data-k="10-14" aria-pressed="false" aria-label="14 окт, рабочий" title="14 окт, рабочий">14</button><button type="button" class="d" data-k="10-15" aria-pressed="false" aria-label="15 окт, рабочий" title="15 окт, рабочий">15</button><button type="button" class="d we" data-k="10-16" aria-pressed="false" aria-label="16 окт, выходной" title="16 окт, выходной">16</button><button type="button" class="d we" data-k="10-17" aria-pressed="false" aria-label="17 окт, выходной" title="17 окт, выходной">17</button><button type="button" class="d" data-k="10-18" aria-pressed="false" aria-label="18 окт, рабочий" title="18 окт, рабочий">18</button><button type="button" class="d" data-k="10-19" aria-pressed="false" aria-label="19 окт, рабочий" title="19 окт, рабочий">19</button><button type="button" class="d" data-k="10-20" aria-pressed="false" aria-label="20 окт, рабочий" title="20 окт, рабочий">20</button><button type="button" class="d" data-k="10-21" aria-pressed="false" aria-label="21 окт, рабочий" title="21 окт, рабочий">21</button><button type="button" class="d vac" data-k="10-22" aria-pressed="true" aria-label="22 окт, рабочий" title="22 окт, рабочий">22</button><button type="button" class="d we vac" data-k="10-23" aria-pressed="true" aria-label="23 окт, выходной" title="23 окт, выходной">23</button><button type="button" class="d we vac" data-k="10-24" aria-pressed="true" aria-label="24 окт, выходной" title="24 окт, выходной">24</button><button type="button" class="d" data-k="10-25" aria-pressed="false" aria-label="25 окт, рабочий" title="25 окт, рабочий">25</button><button type="button" class="d" data-k="10-26" aria-pressed="false" aria-label="26 окт, рабочий" title="26 окт, рабочий">26</button><button type="button" class="d" data-k="10-27" aria-pressed="false" aria-label="27 окт, рабочий" title="27 окт, рабочий">27</button><button type="button" class="d" data-k="10-28" aria-pressed="false" aria-label="28 окт, рабочий" title="28 окт, рабочий">28</button><button type="button" class="d vac" data-k="10-29" aria-pressed="true" aria-label="29 окт, рабочий" title="29 окт, рабочий">29</button><button type="button" class="d we vac" data-k="10-30" aria-pressed="true" aria-label="30 окт, выходной" title="30 окт, выходной">30</button><button type="button" class="d we vac" data-k="10-31" aria-pressed="true" aria-label="31 окт, выходной" title="31 окт, выходной">31</button></div><div class="note" id="mn9">Без праздников</div></article><article class="month"><div class="mh"><h3>Ноябрь</h3><small id="mi10">20 раб.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><button type="button" class="d" data-k="11-1" aria-pressed="false" aria-label="1 ноя, рабочий" title="1 ноя, рабочий">1</button><button type="button" class="d" data-k="11-2" aria-pressed="false" aria-label="2 ноя, рабочий" title="2 ноя, рабочий">2</button><button type="button" class="d" data-k="11-3" aria-pressed="false" aria-label="3 ноя, рабочий" title="3 ноя, рабочий">3</button><button type="button" class="d hol" data-k="11-4" disabled="" aria-pressed="false" aria-label="4 ноя, праздник (День народного единства)" title="4 ноя, праздник (День народного единства)">4</button><button type="button" class="d hol" data-k="11-5" disabled="" aria-pressed="false" aria-label="5 ноя, праздник (Перенос с 2 января)" title="5 ноя, праздник (Перенос с 2 января)">5</button><button type="button" class="d we" data-k="11-6" aria-pressed="false" aria-label="6 ноя, выходной" title="6 ноя, выходной">6</button><button type="button" class="d we" data-k="11-7" aria-pressed="false" aria-label="7 ноя, выходной" title="7 ноя, выходной">7</button><button type="button" class="d" data-k="11-8" aria-pressed="false" aria-label="8 ноя, рабочий" title="8 ноя, рабочий">8</button><button type="button" class="d" data-k="11-9" aria-pressed="false" aria-label="9 ноя, рабочий" title="9 ноя, рабочий">9</button><button type="button" class="d" data-k="11-10" aria-pressed="false" aria-label="10 ноя, рабочий" title="10 ноя, рабочий">10</button><button type="button" class="d" data-k="11-11" aria-pressed="false" aria-label="11 ноя, рабочий" title="11 ноя, рабочий">11</button><button type="button" class="d" data-k="11-12" aria-pressed="false" aria-label="12 ноя, рабочий" title="12 ноя, рабочий">12</button><button type="button" class="d we" data-k="11-13" aria-pressed="false" aria-label="13 ноя, выходной" title="13 ноя, выходной">13</button><button type="button" class="d we" data-k="11-14" aria-pressed="false" aria-label="14 ноя, выходной" title="14 ноя, выходной">14</button><button type="button" class="d" data-k="11-15" aria-pressed="false" aria-label="15 ноя, рабочий" title="15 ноя, рабочий">15</button><button type="button" class="d" data-k="11-16" aria-pressed="false" aria-label="16 ноя, рабочий" title="16 ноя, рабочий">16</button><button type="button" class="d" data-k="11-17" aria-pressed="false" aria-label="17 ноя, рабочий" title="17 ноя, рабочий">17</button><button type="button" class="d" data-k="11-18" aria-pressed="false" aria-label="18 ноя, рабочий" title="18 ноя, рабочий">18</button><button type="button" class="d" data-k="11-19" aria-pressed="false" aria-label="19 ноя, рабочий" title="19 ноя, рабочий">19</button><button type="button" class="d we" data-k="11-20" aria-pressed="false" aria-label="20 ноя, выходной" title="20 ноя, выходной">20</button><button type="button" class="d we" data-k="11-21" aria-pressed="false" aria-label="21 ноя, выходной" title="21 ноя, выходной">21</button><button type="button" class="d" data-k="11-22" aria-pressed="false" aria-label="22 ноя, рабочий" title="22 ноя, рабочий">22</button><button type="button" class="d" data-k="11-23" aria-pressed="false" aria-label="23 ноя, рабочий" title="23 ноя, рабочий">23</button><button type="button" class="d" data-k="11-24" aria-pressed="false" aria-label="24 ноя, рабочий" title="24 ноя, рабочий">24</button><button type="button" class="d" data-k="11-25" aria-pressed="false" aria-label="25 ноя, рабочий" title="25 ноя, рабочий">25</button><button type="button" class="d" data-k="11-26" aria-pressed="false" aria-label="26 ноя, рабочий" title="26 ноя, рабочий">26</button><button type="button" class="d we" data-k="11-27" aria-pressed="false" aria-label="27 ноя, выходной" title="27 ноя, выходной">27</button><button type="button" class="d we" data-k="11-28" aria-pressed="false" aria-label="28 ноя, выходной" title="28 ноя, выходной">28</button><button type="button" class="d" data-k="11-29" aria-pressed="false" aria-label="29 ноя, рабочий" title="29 ноя, рабочий">29</button><button type="button" class="d" data-k="11-30" aria-pressed="false" aria-label="30 ноя, рабочий" title="30 ноя, рабочий">30</button></div><div class="note" id="mn10"><em>Праздников: 2 дня</em></div></article><article class="month"><div class="mh"><h3>Декабрь</h3><small id="mi11">22 раб.</small></div><div class="grid"><div class="dow">пн</div><div class="dow">вт</div><div class="dow">ср</div><div class="dow">чт</div><div class="dow">пт</div><div class="dow">сб</div><div class="dow">вс</div><div class="d empty"></div><div class="d empty"></div><button type="button" class="d" data-k="12-1" aria-pressed="false" aria-label="1 дек, рабочий" title="1 дек, рабочий">1</button><button type="button" class="d" data-k="12-2" aria-pressed="false" aria-label="2 дек, рабочий" title="2 дек, рабочий">2</button><button type="button" class="d" data-k="12-3" aria-pressed="false" aria-label="3 дек, рабочий" title="3 дек, рабочий">3</button><button type="button" class="d we" data-k="12-4" aria-pressed="false" aria-label="4 дек, выходной" title="4 дек, выходной">4</button><button type="button" class="d we" data-k="12-5" aria-pressed="false" aria-label="5 дек, выходной" title="5 дек, выходной">5</button><button type="button" class="d" data-k="12-6" aria-pressed="false" aria-label="6 дек, рабочий" title="6 дек, рабочий">6</button><button type="button" class="d" data-k="12-7" aria-pressed="false" aria-label="7 дек, рабочий" title="7 дек, рабочий">7</button><button type="button" class="d" data-k="12-8" aria-pressed="false" aria-label="8 дек, рабочий" title="8 дек, рабочий">8</button><button type="button" class="d" data-k="12-9" aria-pressed="false" aria-label="9 дек, рабочий" title="9 дек, рабочий">9</button><button type="button" class="d" data-k="12-10" aria-pressed="false" aria-label="10 дек, рабочий" title="10 дек, рабочий">10</button><button type="button" class="d we" data-k="12-11" aria-pressed="false" aria-label="11 дек, выходной" title="11 дек, выходной">11</button><button type="button" class="d we" data-k="12-12" aria-pressed="false" aria-label="12 дек, выходной" title="12 дек, выходной">12</button><button type="button" class="d" data-k="12-13" aria-pressed="false" aria-label="13 дек, рабочий" title="13 дек, рабочий">13</button><button type="button" class="d" data-k="12-14" aria-pressed="false" aria-label="14 дек, рабочий" title="14 дек, рабочий">14</button><button type="button" class="d" data-k="12-15" aria-pressed="false" aria-label="15 дек, рабочий" title="15 дек, рабочий">15</button><button type="button" class="d" data-k="12-16" aria-pressed="false" aria-label="16 дек, рабочий" title="16 дек, рабочий">16</button><button type="button" class="d" data-k="12-17" aria-pressed="false" aria-label="17 дек, рабочий" title="17 дек, рабочий">17</button><button type="button" class="d we" data-k="12-18" aria-pressed="false" aria-label="18 дек, выходной" title="18 дек, выходной">18</button><button type="button" class="d we" data-k="12-19" aria-pressed="false" aria-label="19 дек, выходной" title="19 дек, выходной">19</button><button type="button" class="d" data-k="12-20" aria-pressed="false" aria-label="20 дек, рабочий" title="20 дек, рабочий">20</button><button type="button" class="d" data-k="12-21" aria-pressed="false" aria-label="21 дек, рабочий" title="21 дек, рабочий">21</button><button type="button" class="d" data-k="12-22" aria-pressed="false" aria-label="22 дек, рабочий" title="22 дек, рабочий">22</button><button type="button" class="d" data-k="12-23" aria-pressed="false" aria-label="23 дек, рабочий" title="23 дек, рабочий">23</button><button type="button" class="d" data-k="12-24" aria-pressed="false" aria-label="24 дек, рабочий" title="24 дек, рабочий">24</button><button type="button" class="d we" data-k="12-25" aria-pressed="false" aria-label="25 дек, выходной" title="25 дек, выходной">25</button><button type="button" class="d we" data-k="12-26" aria-pressed="false" aria-label="26 дек, выходной" title="26 дек, выходной">26</button><button type="button" class="d" data-k="12-27" aria-pressed="false" aria-label="27 дек, рабочий" title="27 дек, рабочий">27</button><button type="button" class="d" data-k="12-28" aria-pressed="false" aria-label="28 дек, рабочий" title="28 дек, рабочий">28</button><button type="button" class="d" data-k="12-29" aria-pressed="false" aria-label="29 дек, рабочий" title="29 дек, рабочий">29</button><button type="button" class="d" data-k="12-30" aria-pressed="false" aria-label="30 дек, рабочий" title="30 дек, рабочий">30</button><button type="button" class="d hol" data-k="12-31" disabled="" aria-pressed="false" aria-label="31 дек, праздник (Перенос с 3 января)" title="31 дек, праздник (Перенос с 3 января)">31</button></div><div class="note" id="mn11"><em>Праздников: 1 день</em></div></article></section>
+
+  <section class="panel">
+    <h2>Отрезки и выгода</h2>
+    <div class="calc">
+      <label for="salary">Оклад в месяц, ₽</label>
+      <input id="salary" type="number" inputmode="numeric" min="0" step="1000" value="200000">
+      <span style="color:var(--muted);font-size:13px">пример, впишите свой</span>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Даты</th><th>Тип</th><th class="n">Дней отпуска</th><th class="n">Раб. дней</th><th class="n">Отпускные</th><th class="n">Минус к зарплате</th><th class="n">Выгода</th></tr></thead>
+        <tbody id="rows"><tr><td>9–11 апр</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;091 ₽</td><td class="n pos">+11&nbsp;387 ₽</td></tr><tr><td>23–25 апр</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;091 ₽</td><td class="n pos">+11&nbsp;387 ₽</td></tr><tr><td>2–4 июл</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;091 ₽</td><td class="n pos">+11&nbsp;387 ₽</td></tr><tr><td>16–25 июл</td><td><span class="tag">10 дн.</span></td><td class="n">10</td><td class="n">6</td><td class="n">68&nbsp;259 ₽</td><td class="n">−54&nbsp;545 ₽</td><td class="n pos">+13&nbsp;714 ₽</td></tr><tr><td>30 июл – 1 авг</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;091 ₽</td><td class="n pos">+11&nbsp;387 ₽</td></tr><tr><td>13–15 авг</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;091 ₽</td><td class="n pos">+11&nbsp;387 ₽</td></tr><tr><td>27–29 авг</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;091 ₽</td><td class="n pos">+11&nbsp;387 ₽</td></tr><tr><td>4–19 сен</td><td><span class="tag">14+ дней</span></td><td class="n">16</td><td class="n">10</td><td class="n">109&nbsp;215 ₽</td><td class="n">−90&nbsp;909 ₽</td><td class="n pos">+18&nbsp;306 ₽</td></tr><tr><td>24–26 сен</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;091 ₽</td><td class="n pos">+11&nbsp;387 ₽</td></tr><tr><td>8–10 окт</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;524 ₽</td><td class="n pos">+10&nbsp;954 ₽</td></tr><tr><td>22–24 окт</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;524 ₽</td><td class="n pos">+10&nbsp;954 ₽</td></tr><tr><td>29–31 окт</td><td><span class="tag">пт–вс</span></td><td class="n">3</td><td class="n">1</td><td class="n">20&nbsp;478 ₽</td><td class="n">−9&nbsp;524 ₽</td><td class="n pos">+10&nbsp;954 ₽</td></tr></tbody>
+        <tfoot id="foot"><tr><td colspan="2">Итого</td><td class="n">56</td><td class="n">26</td><td class="n">382&nbsp;253 ₽</td><td class="n">−237&nbsp;662 ₽</td><td class="n pos">+144&nbsp;590 ₽</td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Как это считается</h2>
+    <ol class="rules">
+      <li>Отпускные платят за каждый календарный день: средний дневной заработок ≈ оклад ÷ 29,3.</li>
+      <li>Зарплата за месяц уменьшается на оклад ÷ число рабочих дней месяца за каждый пропущенный рабочий день. Чем больше рабочих дней в месяце, тем дешевле каждый пропущенный.</li>
+      <li>Связка пт–сб–вс даёт 3 дня отпускных и забирает 1 рабочий день: примерно +5,7% оклада.</li>
+      <li>При гибком графике считаются ваши рабочие дни: зарплата за месяц делится на число рабочих дней по вашему графику.</li>
+      <li>Праздники внутри отпуска не оплачиваются и удлиняют его. Выгоднее ставить отпуск в месяцы без праздников.</li>
+      <li>Хотя бы одна часть отпуска должна быть не меньше 14 дней (ст. 125 ТК РФ).</li>
+      <li>Расчёт примерный: премии и повышение за последние 12 месяцев меняют средний заработок.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function(){
+const Y=2027; let TOTAL=56;
+const MONTHS=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const MGEN=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+const HOL={"1-1":"Новогодние каникулы","1-2":"Новогодние каникулы","1-3":"Новогодние каникулы","1-4":"Новогодние каникулы","1-5":"Новогодние каникулы","1-6":"Новогодние каникулы","1-7":"Рождество","1-8":"Новогодние каникулы",
+ "2-22":"Перенос с 20 февраля","2-23":"День защитника Отечества","3-8":"Международный женский день",
+ "5-1":"Праздник Весны и Труда","5-3":"Перенос с 1 мая","5-9":"День Победы","5-10":"Перенос с 9 мая",
+ "6-12":"День России","6-14":"Перенос с 12 июня","11-4":"День народного единства","11-5":"Перенос с 2 января","12-31":"Перенос с 3 января"};
+const PLAN=[[4,9,4,11],[4,23,4,25],[7,2,7,4],[7,16,7,25],[7,30,8,1],[8,13,8,15],[8,27,8,29],[9,4,9,19],[9,24,9,26],[10,8,10,10],[10,22,10,24],[10,29,10,31]];
+const TYPE_NAME={w:"рабочий",o:"выходной",h:"праздник"};
+const NEXT={w:"o",o:"h",h:"w"};
+
+const key=d=>(d.getMonth()+1)+"-"+d.getDate();
+const isWE=d=>d.getDay()===0||d.getDay()===6;
+const ALL=[];for(let d=new Date(Y,0,1);d.getFullYear()===Y;d.setDate(d.getDate()+1))ALL.push(new Date(d));
+const DATE={};ALL.forEach(d=>DATE[key(d)]=d);
+const defType=k=>HOL[k]?"h":isWE(DATE[k])?"o":"w";
+
+let sel=new Set(), ovr={}, mode="vac", WN=[];
+const typeOf=k=>ovr[k]||defType(k);
+const isOff=d=>typeOf(key(d))!=="w";
+const isHol=k=>typeOf(k)==="h";
+function calcWN(){WN=[...Array(12).keys()].map(m=>{let n=0;for(let d=new Date(Y,m,1);d.getMonth()===m;d.setDate(d.getDate()+1))if(!isOff(d))n++;return n;});}
+
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const planSet=()=>{const s=new Set();PLAN.forEach(v=>{for(let d=new Date(Y,v[0]-1,v[1]);d<=new Date(Y,v[2]-1,v[3]);d.setDate(d.getDate()+1))s.add(key(d));});return s;};
+function save(){store.set("vac2027",JSON.stringify([...sel]));store.set("sched2027",JSON.stringify(ovr));}
+function load(){
+  const v=store.get("vac2027");sel=v?new Set(JSON.parse(v)):planSet();
+  const o=store.get("sched2027");ovr=o?JSON.parse(o):{};
+}
+function setType(k,t){if(t===defType(k))delete ovr[k];else ovr[k]=t;if(t==="h")sel.delete(k);}
+
+// --- календарь
+const box=document.getElementById("months");box.innerHTML="";const cells={};
+MONTHS.forEach((name,m)=>{
+  const el=document.createElement("article");el.className="month";
+  el.innerHTML=`<div class="mh"><h3>${name}</h3><small id="mi${m}"></small></div>`;
+  const g=document.createElement("div");g.className="grid";
+  ["пн","вт","ср","чт","пт","сб","вс"].forEach(s=>g.insertAdjacentHTML("beforeend",`<div class="dow">${s}</div>`));
+  const first=(new Date(Y,m,1).getDay()+6)%7;
+  for(let i=0;i<first;i++)g.insertAdjacentHTML("beforeend",'<div class="d empty"></div>');
+  for(let d=new Date(Y,m,1);d.getMonth()===m;d.setDate(d.getDate()+1)){
+    const k=key(d);const b=document.createElement("button");b.type="button";b.className="d";b.textContent=d.getDate();b.dataset.k=k;
+    cells[k]=b;g.appendChild(b);
+  }
+  el.appendChild(g);
+  el.insertAdjacentHTML("beforeend",`<div class="note" id="mn${m}"></div>`);
+  box.appendChild(el);
+});
+
+function paintCell(k){
+  const b=cells[k],t=typeOf(k),d=DATE[k];
+  b.classList.toggle("we",t==="o");b.classList.toggle("hol",t==="h");b.classList.toggle("mod",!!ovr[k]);
+  b.classList.toggle("vac",sel.has(k));
+  b.disabled=mode==="vac"&&t==="h";
+  if(mode==="vac")b.setAttribute("aria-pressed",sel.has(k));else b.removeAttribute("aria-pressed");
+  const label=`${d.getDate()} ${MGEN[d.getMonth()]}, ${TYPE_NAME[t]}${HOL[k]?" ("+HOL[k]+")":""}${ovr[k]?", изменено":""}`;
+  b.setAttribute("aria-label",label);b.title=label;
+}
+
+// --- клики и протягивание
+let drag=null;
+function apply(k){const b=cells[k];if(!b)return;
+  if(drag.kind==="vac"){if(isHol(k))return;if(drag.val)sel.add(k);else sel.delete(k);}
+  else setType(k,drag.val==="d"?defType(k):drag.val);
+  paintCell(k);}
+let lastPT="mouse";
+box.addEventListener("click",e=>{
+  if(lastPT==="mouse"||e.detail===0)return;
+  const b=e.target.closest(".d[data-k]");if(!b||b.disabled)return;const k=b.dataset.k;
+  drag=mode==="vac"?{kind:"vac",val:!sel.has(k)}:{kind:"sched",val:brush};
+  apply(k);drag=null;save();render();
+});
+box.addEventListener("pointerdown",e=>{
+  lastPT=e.pointerType;if(e.pointerType!=="mouse")return;
+  const b=e.target.closest(".d[data-k]");if(!b||b.disabled)return;const k=b.dataset.k;
+  drag=mode==="vac"?{kind:"vac",val:!sel.has(k)}:{kind:"sched",val:brush};
+  drag.mouse=e.pointerType==="mouse";apply(k);e.preventDefault();
+});
+box.addEventListener("pointerover",e=>{if(!drag||!drag.mouse)return;const b=e.target.closest(".d[data-k]");if(b)apply(b.dataset.k);});
+const end=()=>{if(drag){drag=null;save();render();}};
+window.addEventListener("pointerup",end);window.addEventListener("pointercancel",end);
+box.addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches(".d[data-k]")){e.preventDefault();const k=e.target.dataset.k;
+    if(mode==="vac"){sel.has(k)?sel.delete(k):sel.add(k);}else setType(k,brush==="d"?defType(k):brush);
+    save();render();}
+});
+
+// --- отрезки
+function runs(){const out=[];let cur=null;
+  ALL.forEach(d=>{const k=key(d);
+    if(sel.has(k)){if(!cur){cur={start:new Date(d),end:new Date(d),days:0,w:0,loss:0};out.push(cur);}cur.end=new Date(d);cur.days++;}
+    else cur=null;});
+  return out;}
+function runType(r){
+  if(r.days>=14)return "14+ дней";
+  if(r.days===3&&r.start.getDay()===5)return "пт–вс";
+  if(r.days===2&&r.start.getDay()===6)return "сб–вс";
+  return r.days+" дн.";}
+const fmt=n=>Math.round(n).toLocaleString("ru-RU")+" ₽";
+const fmtD=(a,b)=>a.getMonth()===b.getMonth()?(a.getDate()===b.getDate()?`${a.getDate()} ${MGEN[a.getMonth()]}`:`${a.getDate()}–${b.getDate()} ${MGEN[a.getMonth()]}`):`${a.getDate()} ${MGEN[a.getMonth()]} – ${b.getDate()} ${MGEN[b.getMonth()]}`;
+const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<10||h>=20)?b:c;};
+
+function render(){
+  calcWN();
+  Object.keys(cells).forEach(paintCell);
+  const s=Math.max(0,+document.getElementById("salary").value||0),daily=s/29.3;
+  const R=runs();let T={d:0,w:0,p:0,l:0};
+  R.forEach(r=>{for(let d=new Date(r.start);d<=r.end;d.setDate(d.getDate()+1))if(!isOff(d)){r.w++;r.loss+=WN[d.getMonth()]?s/WN[d.getMonth()]:0;}
+    r.pay=r.days*daily;T.d+=r.days;T.w+=r.w;T.p+=r.pay;T.l+=r.loss;});
+  document.getElementById("rows").innerHTML=R.length?R.map(r=>{const g=r.pay-r.loss;
+    return `<tr><td>${fmtD(r.start,r.end)}</td><td><span class="tag">${runType(r)}</span></td><td class="n">${r.days}</td><td class="n">${r.w}</td><td class="n">${fmt(r.pay)}</td><td class="n">−${fmt(r.loss)}</td><td class="n ${g>=0?"pos":"neg"}">${g>=0?"+":"−"}${fmt(Math.abs(g))}</td></tr>`;}).join("")
+    :'<tr class="empty-row"><td colspan="7">Пока ничего не выбрано. Нажмите на дни в календаре.</td></tr>';
+  const G=T.p-T.l;
+  document.getElementById("foot").innerHTML=R.length?`<tr><td colspan="2">Итого</td><td class="n">${T.d}</td><td class="n">${T.w}</td><td class="n">${fmt(T.p)}</td><td class="n">−${fmt(T.l)}</td><td class="n ${G>=0?"pos":"neg"}">${G>=0?"+":"−"}${fmt(Math.abs(G))}</td></tr>`:"";
+  const n=sel.size,over=n>TOTAL;
+  document.getElementById("used").textContent=`${n} / ${TOTAL}`;
+  document.getElementById("left").textContent=TOTAL-n;
+  document.getElementById("wdays").textContent=T.w;
+  document.getElementById("gainStat").textContent=s?((G>=0?"+":"−")+Math.abs(G/s).toFixed(2).replace(".",",")):"—";
+  document.getElementById("usedStat").classList.toggle("over",over);
+  document.getElementById("meter").classList.toggle("over",over);
+  document.getElementById("meterFill").style.width=Math.min(100,n/TOTAL*100)+"%";
+  MONTHS.forEach((_,m)=>{let v=0,h=0;
+    for(let d=new Date(Y,m,1);d.getMonth()===m;d.setDate(d.getDate()+1)){const k=key(d);if(sel.has(k))v++;if(isHol(k))h++;}
+    document.getElementById("mi"+m).textContent=`${WN[m]} раб.${v?` · отпуск ${v} дн.`:""}`;
+    document.getElementById("mn"+m).innerHTML=h?`<em>Праздников: ${h} ${plural(h,"день","дня","дней")}</em>`:"Без праздников";});
+  const W=[];
+  if(over)W.push(`Выбрано на ${n-TOTAL} дн. больше, чем есть.`);
+  if(n&&TOTAL>=14&&!R.some(r=>r.days>=14))W.push("Нет ни одной части от 14 дней подряд: по ТК РФ хотя бы одна часть должна быть такой.");
+  const sep=R.some(r=>{let c=0;for(let d=new Date(r.start);d<=r.end;d.setDate(d.getDate()+1))if(d.getMonth()===8)c++;return c>=14;});
+  const holAdj=R.filter(r=>{const a=new Date(r.start);a.setDate(a.getDate()-1);const b=new Date(r.end);b.setDate(b.getDate()+1);return (a.getFullYear()===Y&&isHol(key(a)))||(b.getFullYear()===Y&&isHol(key(b)));});
+  if(holAdj.length)W.push(`Отрезок рядом с праздником (${holAdj.map(r=>fmtD(r.start,r.end)).join(", ")}): если праздник окажется внутри отпуска, отпуск продлится на него без оплаты.`);
+  document.getElementById("warns").innerHTML=W.map(t=>`<div>${t}</div>`).join("");
+}
+
+// --- режимы
+const mVac=document.getElementById("mVac"),mSched=document.getElementById("mSched"),panel=document.getElementById("schedPanel");
+function setMode(m){mode=m;mVac.setAttribute("aria-pressed",m==="vac");mSched.setAttribute("aria-pressed",m==="sched");
+  panel.hidden=m!=="sched";document.body.classList.toggle("m-sched",m==="sched");render();}
+mVac.addEventListener("click",()=>setMode("vac"));
+mSched.addEventListener("click",()=>setMode("sched"));
+let brush="w";
+document.getElementById("brushes").addEventListener("click",e=>{const b=e.target.closest("button[data-b]");if(!b)return;brush=b.dataset.b;
+  document.querySelectorAll("#brushes button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
+
+// --- инструменты графика
+document.getElementById("btnPattern").addEventListener("click",()=>{
+  const w=Math.max(1,+document.getElementById("pW").value||1),o=Math.max(1,+document.getElementById("pO").value||1);
+  const st=document.getElementById("pStart").value.split("-");const start=new Date(+st[0]||Y,(+st[1]||1)-1,+st[2]||1);
+  const holOff=document.getElementById("pHol").checked;
+  ALL.forEach(d=>{const k=key(d);
+    if(holOff&&HOL[k]){setType(k,"h");return;}
+    const diff=Math.round((d-start)/864e5);const pos=((diff%(w+o))+(w+o))%(w+o);
+    setType(k,pos<w?"w":"o");});
+  save();render();
+});
+document.getElementById("btnHolWork").addEventListener("click",()=>{Object.keys(HOL).forEach(k=>{if(typeOf(k)==="h")setType(k,"w");});save();render();});
+document.getElementById("btnWeWork").addEventListener("click",()=>{ALL.forEach(d=>{const k=key(d);if(d.getDay()===6&&typeOf(k)==="o")setType(k,"w");});save();render();});
+document.getElementById("btnReset").addEventListener("click",()=>{ovr={};save();render();});
+
+// --- сохранить картинкой
+function drawPNG(){
+  const C={bg:"#f6f7f4",card:"#ffffff",fg:"#1d2420",muted:"#6a736d",line:"#dfe3dd",we:"#eceee9",hol:"#f3d2cf",holfg:"#a8322a",vac:"#2f7d5b",vacfg:"#ffffff",mod:"#b26a00"};
+  const F='"Golos Text",system-ui,sans-serif',FD='"Unbounded","Golos Text",system-ui,sans-serif';
+  const cols=3,cell=58,gap=5,pad=22,mw=7*cell+6*gap+pad*2,mh=46+26+6*(cell+gap)+30+pad,M=40,G=24;
+  const R=runs();R.forEach(r=>{r.w=0;for(let d=new Date(r.start);d<=r.end;d.setDate(d.getDate()+1))if(!isOff(d))r.w++;});
+  const lines=R.map(r=>`${fmtD(r.start,r.end)} — ${r.days} дн.`);
+  const W=M*2+cols*mw+(cols-1)*G, head=190, rowsH=4*mh+3*G;
+  const listCols=3, listH=lines.length?60+Math.ceil(lines.length/listCols)*34:0;
+  const H=head+rowsH+listH+M+20;
+  const cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+  const rr=(X,Y,w,h,r,fill,stroke)=>{x.beginPath();x.roundRect(X,Y,w,h,r);if(fill){x.fillStyle=fill;x.fill();}if(stroke){x.strokeStyle=stroke;x.lineWidth=1;x.stroke();}};
+  x.fillStyle=C.bg;x.fillRect(0,0,W,H);
+  x.fillStyle=C.fg;x.font=`700 48px ${FD}`;x.textBaseline="alphabetic";x.fillText("Отпуск 2027",M,M+48);
+  const n=sel.size;let wd=0;R.forEach(r=>wd+=r.w);
+  x.font=`500 22px ${F}`;x.fillStyle=C.muted;
+  x.fillText(`Выбрано ${n} из ${TOTAL} дн. · рабочих дней пропущено: ${wd}`,M,M+92);
+  // легенда
+  let lx=M;const ly=M+120;x.font=`400 19px ${F}`;
+  [["Рабочий",C.card],["Выходной",C.we],["Праздник",C.hol],["Отпуск",C.vac]].forEach(([t,c])=>{rr(lx,ly,22,22,5,c,C.line);x.fillStyle=C.muted;x.fillText(t,lx+30,ly+18);lx+=30+x.measureText(t).width+28;});
+  if(Object.keys(ovr).length){x.fillStyle=C.mod;x.beginPath();x.arc(lx+8,ly+11,5,0,7);x.fill();x.fillStyle=C.muted;x.fillText("Свой график",lx+22,ly+18);}
+  MONTHS.forEach((name,m)=>{
+    const cx=M+(m%cols)*(mw+G), cy=head+Math.floor(m/cols)*(mh+G);
+    rr(cx,cy,mw,mh,14,C.card,C.line);
+    x.fillStyle=C.fg;x.font=`500 22px ${FD}`;x.fillText(name,cx+pad,cy+pad+22);
+    let v=0;for(let d=new Date(Y,m,1);d.getMonth()===m;d.setDate(d.getDate()+1))if(sel.has(key(d)))v++;
+    x.font=`400 16px ${F}`;x.fillStyle=C.muted;x.textAlign="right";x.fillText(`${WN[m]} раб.${v?` · отпуск ${v}`:""}`,cx+mw-pad,cy+pad+20);
+    x.textAlign="center";x.font=`500 14px ${F}`;
+    ["ПН","ВТ","СР","ЧТ","ПТ","СБ","ВС"].forEach((s,i)=>x.fillText(s,cx+pad+i*(cell+gap)+cell/2,cy+pad+60));
+    const first=(new Date(Y,m,1).getDay()+6)%7;let i=first;
+    for(let d=new Date(Y,m,1);d.getMonth()===m;d.setDate(d.getDate()+1),i++){
+      const k=key(d),t=typeOf(k),X=cx+pad+(i%7)*(cell+gap),Yy=cy+pad+74+Math.floor(i/7)*(cell+gap);
+      let bg=C.card,fg=C.fg,st=C.line,wgt=400;
+      if(t==="o"){bg=C.we;fg=C.muted;st=null;} if(t==="h"){bg=C.hol;fg=C.holfg;st=null;wgt=600;}
+      if(sel.has(k)){bg=C.vac;fg=C.vacfg;st=null;wgt=600;}
+      rr(X,Yy,cell,cell,8,bg,st);
+      if(sel.has(k)&&t==="o"){x.fillStyle="rgba(0,0,0,.18)";x.fillRect(X+4,Yy+cell-5,cell-8,3);}
+      if(ovr[k]){x.fillStyle=C.mod;x.beginPath();x.arc(X+cell-9,Yy+9,4,0,7);x.fill();}
+      x.fillStyle=fg;x.font=`${wgt} 21px ${F}`;x.fillText(d.getDate(),X+cell/2,Yy+cell/2+7);
+    }
+    x.textAlign="left";
+  });
+  if(lines.length){
+    const ty=head+rowsH+M;x.fillStyle=C.fg;x.font=`500 22px ${FD}`;x.fillText("Отрезки отпуска",M,ty+20);
+    x.font=`400 19px ${F}`;x.fillStyle=C.fg;const per=Math.ceil(lines.length/listCols),cw=(W-2*M)/listCols;
+    lines.forEach((l,j)=>x.fillText(l,M+Math.floor(j/per)*cw,ty+60+(j%per)*34));
+  }
+  return cv;
+}
+let overlay=null;
+function showImage(blob){
+  if(!overlay){overlay=document.createElement("div");overlay.className="ov";
+    overlay.innerHTML='<div class="ov-box"><div class="ov-head"><b>Картинка готова</b><button type="button" id="ovClose">Закрыть</button></div><p>Нажмите на картинку и удерживайте, затем выберите «Сохранить в Фото». На компьютере: правый клик → «Сохранить изображение».</p><img id="ovImg" alt="Календарь отпуска 2027"></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click",e=>{if(e.target===overlay||e.target.id==="ovClose")overlay.hidden=true;});}
+  const img=overlay.querySelector("#ovImg");if(img.src.startsWith("blob:"))URL.revokeObjectURL(img.src);
+  img.src=URL.createObjectURL(blob);overlay.hidden=false;
+}
+let dl;const btnImg=document.getElementById("btnImg");
+try{window.claude?.use?.("downloads")?.then?.(v=>{dl=v;},()=>{});}catch(e){}
+btnImg.addEventListener("click",async()=>{
+  btnImg.disabled=true;const old=btnImg.textContent;btnImg.textContent="Готовлю…";
+  try{try{await document.fonts.ready;}catch(e){}
+    const blob=await new Promise(r=>drawPNG().toBlob(r,"image/png"));
+    let done=false;
+    if(dl){try{await dl.save({filename:"Отпуск 2027.png",data:blob});done=true;}catch(e){if(e&&e.code==="declined")done=true;}}
+    if(!done)showImage(blob);
+  }finally{btnImg.disabled=false;btnImg.textContent=old;}
+});
+
+document.getElementById("btnPlan").addEventListener("click",()=>{sel=planSet();Object.keys(ovr).forEach(k=>{if(isHol(k))sel.delete(k);});save();render();});
+document.getElementById("btnClear").addEventListener("click",()=>{sel=new Set();save();render();});
+const inp=document.getElementById("salary");
+const sv=store.get("salary");if(sv)inp.value=sv;
+inp.addEventListener("input",()=>{store.set("salary",inp.value);render();});
+const tot=document.getElementById("total");
+const tv=store.get("total");if(tv)tot.value=tv;
+tot.addEventListener("input",()=>{const v=Math.round(+tot.value);if(v>0){TOTAL=v;store.set("total",v);render();}});
+TOTAL=Math.max(1,Math.round(+tot.value)||56);
+load();render();
+})();
+</script>
+
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
+</body>
+</html>
