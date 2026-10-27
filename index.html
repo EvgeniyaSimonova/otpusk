@@ -14,6 +14,8 @@
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}*{box-sizing:border-box}</style>
 
 
+
+
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: шапка с живыми итогами (липкая) → легенда и кнопки → сетка 12 месяцев → таблица отрезков */
@@ -85,6 +87,37 @@ button.primary{background:var(--accent);color:var(--vac-fg);border-color:var(--a
 .ov-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .ov-box p{margin:0;font-size:14px;color:var(--muted)}
 .ov-box img{width:100%;height:auto;border-radius:8px;border:1px solid var(--line);-webkit-touch-callout:default}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tab{display:grid;gap:2px;text-align:left;padding:12px 14px;border-radius:10px;border:2px solid var(--line);background:var(--surface)}
+.tab-t{font-weight:600;font-size:15px}
+.tab-s{font-size:12px;color:var(--muted)}
+.tab[aria-pressed="true"]{border-color:var(--accent);background:var(--vac-soft)}
+.hintbar{font-size:14px;padding:10px 14px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
+.hintbar b{color:var(--accent)}
+
+.step{display:grid;gap:10px}
+.step h3{margin:0;font-size:15px;font-weight:600}
+.step .sub{font-size:13px;color:var(--muted)}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.chip{display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:var(--surface);position:relative}
+.chip .sw{width:22px;height:22px;flex:none;margin:0;border-radius:6px}
+.chip .sw-reset{background:repeating-linear-gradient(45deg,var(--work) 0 4px,var(--weekend) 4px 8px)}
+.chip span{display:grid;line-height:1.25}
+.chip small{font-size:12px;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--vac-soft)}
+.chip[aria-pressed="true"]::after{content:"✓";position:absolute;top:6px;right:10px;color:var(--accent);font-weight:700}
+details.step{border-top:1px solid var(--line);padding-top:12px}
+details.step summary{cursor:pointer;font-weight:600;font-size:15px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 16px}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.form label.check{display:flex;align-items:center;gap:8px;color:var(--fg);grid-column:1/-1}
+.form input[type=number],.form input[type=date]{font:inherit;font-family:var(--f-mono);padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+.form input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.form-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.form-foot small{font-size:12px;color:var(--muted)}
+.done{justify-self:start;padding:10px 16px;font-size:14px}
+body.m-sched .month{border-color:var(--accent);border-style:dashed}
+@media (max-width:600px){.tabs{grid-template-columns:1fr}}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px;min-width:600px}
@@ -102,7 +135,7 @@ tfoot td{font-weight:600;border-bottom:none}
 .mode{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
 .mode button{border:none;border-radius:0;padding:7px 14px}
 .mode button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
-.sched{background:var(--surface);border:1px dashed var(--accent);border-radius:10px;padding:14px 16px;display:grid;gap:12px}
+.sched{background:var(--surface);border:1px dashed var(--accent);border-radius:10px;padding:16px;display:grid;gap:16px}
 .sched p{margin:0;font-size:14px;max-width:80ch}
 .row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px}
 .row input[type=number],.row input[type=date]{font:inherit;font-family:var(--f-mono);padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
@@ -136,44 +169,58 @@ body.m-sched .d.hol{cursor:cell}
   </div>
   <div class="warns" id="warns"></div>
 
-  <div class="tools">
-    <div class="mode" role="group" aria-label="Что редактировать">
-      <button type="button" id="mVac" aria-pressed="true">Отпуск</button>
-      <button type="button" id="mSched" aria-pressed="false">Мой график</button>
-    </div>
+  <div class="tabs" role="group" aria-label="Режим">
+    <button type="button" id="mVac" class="tab" aria-pressed="true"><span class="tab-t">Выбрать отпуск</span><span class="tab-s">Отмечаю дни отпуска</span></button>
+    <button type="button" id="mSched" class="tab" aria-pressed="false"><span class="tab-t">Мой график работы</span><span class="tab-s">Если работаю не по пятидневке</span></button>
+  </div>
+
+  <div class="hintbar" id="hintbar">Нажмите на день в календаре, чтобы добавить его в отпуск. Нажмите ещё раз, чтобы убрать.</div>
+
+  <div class="tools" id="vacTools">
+    <label class="days" for="total">Сколько у меня дней отпуска <input id="total" type="number" inputmode="numeric" min="1" max="365" value="56"></label>
     <div class="btns">
-      <label class="days" for="total">Дней отпуска в году <input id="total" type="number" inputmode="numeric" min="1" max="365" value="56"></label>
-      <button id="btnPlan" type="button">Пример плана</button>
       <button id="btnClear" type="button">Очистить отпуск</button>
+      
       <button id="btnImg" type="button" class="primary">Сохранить картинкой</button>
     </div>
   </div>
 
   <section class="sched" id="schedPanel" hidden="">
-    <div class="row">
-      <span class="ttl">Какой день ставим</span>
-      <div class="mode" role="group" aria-label="Тип дня" id="brushes">
-        <button type="button" data-b="w" aria-pressed="true"><i class="sw" style="background:var(--work)"></i>Рабочий</button>
-        <button type="button" data-b="o" aria-pressed="false"><i class="sw" style="background:var(--weekend)"></i>Выходной</button>
-        <button type="button" data-b="h" aria-pressed="false"><i class="sw" style="background:var(--holiday)"></i>Праздник</button>
-        <button type="button" data-b="d" aria-pressed="false">Как в календаре</button>
+    <div class="step">
+      <h3>Каким сделать день</h3>
+      <div class="chips" role="group" aria-label="Тип дня" id="brushes">
+        <button type="button" class="chip" data-b="w" aria-pressed="true"><i class="sw" style="background:var(--work)"></i><span><b>Рабочий</b><small>в этот день работаю</small></span></button>
+        <button type="button" class="chip" data-b="o" aria-pressed="false"><i class="sw" style="background:var(--weekend)"></i><span><b>Выходной</b><small>в этот день не работаю</small></span></button>
+        <button type="button" class="chip" data-b="h" aria-pressed="false"><i class="sw" style="background:var(--holiday)"></i><span><b>Праздник</b><small>не входит в отпуск</small></span></button>
+        <button type="button" class="chip" data-b="d" aria-pressed="false"><i class="sw sw-reset"></i><span><b>Как было</b><small>вернуть день из календаря</small></span></button>
+      </div>
+      <p class="sub">Выберите вариант, затем нажимайте на дни в календаре ниже. Изменённые дни отмечаются оранжевой точкой.</p>
+    </div>
+
+    <details class="step">
+      <summary>Работаю сменами (2/2, 3/3, 1/3…)? Заполнить весь год</summary>
+      <div class="form">
+        <label for="pW">Работаю подряд, дней <input id="pW" type="number" inputmode="numeric" min="1" max="14" value="2"></label>
+        <label for="pO">Отдыхаю подряд, дней <input id="pO" type="number" inputmode="numeric" min="1" max="14" value="2"></label>
+        <label for="pStart">Мой первый рабочий день в 2027 <input id="pStart" type="date" min="2027-01-01" max="2027-12-31" value="2027-01-01"></label>
+        <label class="check" for="pHol"><input id="pHol" type="checkbox"> В государственные праздники не работаю</label>
+      </div>
+      <div class="form-foot">
+        <button type="button" id="btnPattern" class="primary">Заполнить год</button>
+        <small>Все дни года будут расставлены заново по сменам.</small>
+      </div>
+    </details>
+
+    <div class="step">
+      <h3>Быстро для всего года</h3>
+      <div class="btns">
+        <button type="button" id="btnHolWork">Все праздники — рабочие</button>
+        <button type="button" id="btnWeWork">Все субботы — рабочие</button>
+        <button type="button" id="btnReset">Сбросить график</button>
       </div>
     </div>
-    <p>Выберите тип и нажимайте на дни в календаре (на компьютере можно провести мышью по нескольким). Каждый клик ставит выбранный тип. Праздник не входит в отпуск и не оплачивается. Изменённые дни отмечены точкой.</p>
-    <div class="row">
-      <span class="ttl">Сменный график</span>
-      <label for="pW">работаю <input id="pW" type="number" min="1" max="14" value="2"></label>
-      <label for="pO">отдыхаю <input id="pO" type="number" min="1" max="14" value="2"></label>
-      <label for="pStart">первый рабочий день <input id="pStart" type="date" min="2027-01-01" max="2027-12-31" value="2027-01-01"></label>
-      <label for="pHol"><input id="pHol" type="checkbox"> праздники выходные</label>
-      <button type="button" id="btnPattern">Заполнить год</button>
-    </div>
-    <div class="row">
-      <span class="ttl">Быстро</span>
-      <button type="button" id="btnHolWork">Работаю в праздники</button>
-      <button type="button" id="btnWeWork">Сб рабочая</button>
-      <button type="button" id="btnReset">Вернуть производственный календарь</button>
-    </div>
+
+    <button type="button" id="btnDone" class="primary done">Готово, перейти к выбору отпуска</button>
   </section>
 
   <div class="legend" aria-label="Обозначения">
@@ -356,10 +403,13 @@ function render(){
 
 // --- режимы
 const mVac=document.getElementById("mVac"),mSched=document.getElementById("mSched"),panel=document.getElementById("schedPanel");
+const HINTS={vac:"Нажмите на день в календаре, чтобы добавить его в отпуск. Нажмите ещё раз, чтобы убрать.",sched:"Сейчас вы меняете <b>свой график</b>, а не отпуск. Выберите, каким сделать день, и нажимайте на дни в календаре."};
 function setMode(m){mode=m;mVac.setAttribute("aria-pressed",m==="vac");mSched.setAttribute("aria-pressed",m==="sched");
+  document.getElementById("hintbar").innerHTML=HINTS[m];document.getElementById("vacTools").hidden=m!=="vac";
   panel.hidden=m!=="sched";document.body.classList.toggle("m-sched",m==="sched");render();}
 mVac.addEventListener("click",()=>setMode("vac"));
 mSched.addEventListener("click",()=>setMode("sched"));
+document.getElementById("btnDone").addEventListener("click",()=>{setMode("vac");document.getElementById("hintbar").scrollIntoView({block:"start",behavior:"smooth"});});
 let brush="w";
 document.getElementById("brushes").addEventListener("click",e=>{const b=e.target.closest("button[data-b]");if(!b)return;brush=b.dataset.b;
   document.querySelectorAll("#brushes button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
@@ -449,7 +499,6 @@ btnImg.addEventListener("click",async()=>{
   }finally{btnImg.disabled=false;btnImg.textContent=old;}
 });
 
-document.getElementById("btnPlan").addEventListener("click",()=>{sel=planSet();Object.keys(ovr).forEach(k=>{if(isHol(k))sel.delete(k);});save();render();});
 document.getElementById("btnClear").addEventListener("click",()=>{sel=new Set();save();render();});
 const inp=document.getElementById("salary");
 const sv=store.get("salary");if(sv)inp.value=sv;
